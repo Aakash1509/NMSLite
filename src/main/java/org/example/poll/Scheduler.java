@@ -130,18 +130,19 @@ public class Scheduler extends AbstractVerticle
 
             var pollTime = metricData.getInteger("metric_poll_time") * 1000L; // Convert to milliseconds
 
-            // Check if the poller already exists with the same interval
+            // Check if the device already exists with the same interval
             if (activeDevices.containsKey(pollerId))
             {
                 return;
             }
 
-            // Schedule the polling for each device at regular intervals based on pollTime
+            // Schedule the polling
             long timerId = vertx.setPeriodic(pollTime, id ->
             {
                 vertx.eventBus().send(Constants.OBJECT_POLL, new JsonObject()
                         .put("credential.profile", objectData.getLong("credential_profile"))
                         .put("ip", objectData.getString("ip"))
+                        .put("port",objectData.getInteger("port"))
                         .put("device_type", objectData.getString("device_type"))
                         .put("metric.group.name", metricData.getString("metric_group_name"))
                         .put("timestamp", System.currentTimeMillis() / 1000));
@@ -149,7 +150,7 @@ public class Scheduler extends AbstractVerticle
                 logger.info("Polling triggered for {} at {}", objectData.getString("hostname"), objectData.getString("ip"));
             });
 
-            // Update the active pollers map
+            // Update the active devices map
             activeDevices.put(pollerId, timerId);
         }
         catch (Exception exception)

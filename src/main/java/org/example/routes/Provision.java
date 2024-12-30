@@ -96,6 +96,7 @@ public class Provision
             QueryUtility.getInstance().insert(Constants.OBJECTS, new JsonObject()
                             .put("credential_profile", device.getLong("credential_profile"))
                             .put("ip", device.getString("ip"))
+                            .put("port",device.getInteger("port"))
                             .put("hostname", device.getString("hostname"))
                             .put("device_type",device.getString("device_type")))
                     .map(insertedId ->
@@ -104,6 +105,7 @@ public class Provision
                                 .put("object_id",insertedId)
                                 .put("credential_profile", device.getLong("credential_profile"))
                                 .put("ip", device.getString("ip"))
+                                .put("port",device.getInteger("port"))
                                 .put("hostname", device.getString("hostname"))
                                 .put("device_type",device.getString("device_type")));
 
@@ -143,6 +145,7 @@ public class Provision
                                 .put("object_id",result.getLong("object_id"))
                                 .put("credential_profile", result.getLong("credential_profile"))
                                 .put("ip",result.getString("ip"))
+                                .put("port",result.getInteger("port"))
                                 .put("hostname",result.getString("hostname"))
                                 .put("device_type",result.getString("device_type")));
 
