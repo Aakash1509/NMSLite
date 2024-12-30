@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.example.database.LoadDB.metrics;
-import static org.example.database.LoadDB.objects;
+import static org.example.Main.metrics;
+import static org.example.Main.objects;
 
 public class Scheduler extends AbstractVerticle
 {

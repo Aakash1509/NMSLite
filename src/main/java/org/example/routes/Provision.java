@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
-import static org.example.database.LoadDB.*;
+import static org.example.Main.*;
 
 
 public class Provision

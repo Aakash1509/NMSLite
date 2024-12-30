@@ -14,7 +14,7 @@ import io.vertx.core.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.example.Main.vertx;
-import static org.example.database.LoadDB.*;
+import static org.example.Main.*;
 
 public class Discovery implements CrudOperations
 {

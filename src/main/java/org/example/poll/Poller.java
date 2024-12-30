@@ -2,14 +2,11 @@ package org.example.poll;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
-import org.example.database.QueryUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.example.database.LoadDB.credentials;
+import static org.example.Main.credentials;
 
 public class Poller extends AbstractVerticle
 {

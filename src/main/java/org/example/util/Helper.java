@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import static org.example.database.LoadDB.objects;
+import static org.example.Main.objects;
 
 public class Helper
 {

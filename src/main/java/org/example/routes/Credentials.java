@@ -9,7 +9,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import org.example.database.QueryUtility;
 
-import static org.example.database.LoadDB.credentials;
+import static org.example.Main.credentials;
 
 public class Credentials implements CrudOperations
 {
