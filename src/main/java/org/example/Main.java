@@ -1,4 +1,5 @@
 package org.example;
+import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -57,17 +58,18 @@ public class Main
                 });
     }
 
-    private static Future<Void> init()
+    private static CompositeFuture init()
     {
-        return loadTable(Constants.DISCOVERIES, discoveries, "discovery_id")
+        return Future.all(
+                        loadTable(Constants.DISCOVERIES, discoveries, "discovery_id"),
 
-                .compose(v -> loadTable(Constants.CREDENTIALS, credentials, "profile_id"))
+                        loadTable(Constants.CREDENTIALS, credentials, "profile_id"),
 
-                .compose(v -> loadTable(Constants.OBJECTS, objects, "object_id"))
+                        loadTable(Constants.OBJECTS, objects, "object_id"),
 
-                .compose(v-> loadTable(Constants.METRICS,metrics,"metric_id"))
+                        loadTable(Constants.METRICS, metrics, "metric_id")
 
-                .onSuccess(v -> logger.info("Database initialized successfully"))
+                ).onSuccess(v -> logger.info("All tables loaded"))
 
                 .onFailure(error -> logger.error("Database initialization failed", error));
     }

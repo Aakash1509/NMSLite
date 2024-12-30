@@ -42,9 +42,9 @@ public class Poller extends AbstractVerticle
                 startPoll(pollingData,timestamp);
             });
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            throw new RuntimeException(e);
+            logger.error("Exception occurred");
         }
     }
 
@@ -79,7 +79,7 @@ public class Poller extends AbstractVerticle
 
                         var result = new JsonObject(output.trim());
 
-                        // Send the result over the event bus
+                        // Send the result over the event bus to File writer verticle
                         vertx.eventBus().send(
                                 Constants.FILE_WRITE,
                                 new JsonObject()
