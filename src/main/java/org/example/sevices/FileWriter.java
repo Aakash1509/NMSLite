@@ -12,7 +12,8 @@ public class FileWriter extends AbstractVerticle
     private static final Logger logger = LoggerFactory.getLogger(FileWriter.class);
 
     @Override
-    public void start() {
+    public void start()
+    {
         vertx.eventBus().<JsonObject>consumer(Constants.FILE_WRITE, message ->
         {
             vertx.executeBlocking(promise ->
@@ -67,7 +68,7 @@ public class FileWriter extends AbstractVerticle
         {
             var existingData = vertx.fileSystem().readFileBlocking(filePath).toString();
 
-            var separator = "\n---\n";
+            var separator = "---\n";
 
             var newData = new JsonObject()
                     .put("ip", ip)

@@ -392,8 +392,10 @@ public class Discovery implements CrudOperations
                 return;
             }
 
+            var deviceInfo = discoveries.get(id);
+
             //If device is already provisioned, no need to go further
-            if(objects.containsKey(id))
+            if(Helper.isProvisioned(deviceInfo.getString("ip")))
             {
                 context.response()
                         .setStatusCode(404)
@@ -403,8 +405,6 @@ public class Discovery implements CrudOperations
 
                 return;
             }
-
-            var deviceInfo = discoveries.get(id);
 
             var records = new JsonArray();
 

@@ -57,7 +57,7 @@ public class QueryUtility
     {
         var promise = Promise.<Long>promise();
 
-        Main.vertx.executeBlocking(insert->
+        Main.vertx.<Long>executeBlocking(insert->
         {
             try
             {
@@ -111,7 +111,7 @@ public class QueryUtility
         {
             if (result.succeeded())
             {
-                promise.complete((Long) result.result());
+                promise.complete(result.result());
             }
             else
             {
@@ -126,7 +126,7 @@ public class QueryUtility
     {
         var promise = Promise.<Void>promise();
 
-        Main.vertx.executeBlocking(delete ->
+        Main.vertx.<Void>executeBlocking(delete ->
         {
             try
             {
@@ -172,9 +172,9 @@ public class QueryUtility
 
     public Future<JsonArray> getAll(String tableName)
     {
-        Promise<JsonArray> promise = Promise.promise();
+        var promise = Promise.<JsonArray>promise();
 
-        Main.vertx.executeBlocking(getAll ->
+        Main.vertx.<JsonArray>executeBlocking(getAll ->
         {
             try
             {
@@ -219,7 +219,7 @@ public class QueryUtility
         {
             if (result.succeeded())
             {
-                promise.complete((JsonArray) result.result());
+                promise.complete(result.result());
             }
             else
             {
@@ -318,7 +318,7 @@ public class QueryUtility
     {
         var promise = Promise.<Boolean>promise();
 
-        Main.vertx.executeBlocking(update ->
+        Main.vertx.<Boolean>executeBlocking(update ->
         {
             try
             {
@@ -382,7 +382,7 @@ public class QueryUtility
         {
             if (result.succeeded())
             {
-                promise.complete((Boolean) result.result());
+                promise.complete(result.result());
             }
             else
             {
