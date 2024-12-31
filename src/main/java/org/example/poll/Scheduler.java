@@ -8,8 +8,8 @@ import io.vertx.core.json.JsonObject;
 import org.example.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.example.Main.metrics;
 import static org.example.Main.objects;
@@ -18,7 +18,7 @@ public class Scheduler extends AbstractVerticle
 {
     private static final Logger logger = LoggerFactory.getLogger(Scheduler.class);
 
-    private final Map<Long,JsonObject> pollDevices = new HashMap<>(); //Will contain provisioned devices with their metrics
+    private final Map<Long,JsonObject> pollDevices = new ConcurrentHashMap<>(); //Will contain provisioned devices with their metrics
 
     public void start()
     {
@@ -120,13 +120,13 @@ public class Scheduler extends AbstractVerticle
         }
     }
 
-    private final Map<String, Long> activeDevices = new HashMap<>(); //THis map will contain which devices are currently undergoing polling
+    private final Map<String, Long> activeDevices = new ConcurrentHashMap<>(); //THis map will contain which devices are currently undergoing polling
 
     private void preparePolling(JsonObject objectData, JsonObject metricData)
     {
         try
         {
-            var pollerId = objectData.getString("ip") + "-" + metricData.getString("metric_group_name");
+            var pollerId = objectData.getString("ip") + metricData.getString("metric_group_name");
 
             var pollTime = metricData.getInteger("metric_poll_time") * 1000L; // Convert to milliseconds
 

@@ -101,13 +101,14 @@ public class Discovery implements CrudOperations
                                 .put("message", "Discovery name should be unique").encodePrettily());
                 return;
             }
+
             QueryUtility.getInstance().insert(Constants.DISCOVERIES,new JsonObject()
-                    .put("name",name)
-                    .put("ip",ip)
-                    .put("port",port)
-                    .put("credential_profiles",credential_profiles)
-                    .put("device_type",device_type)
-                    .put("status","Down"))
+                            .put("name",name)
+                            .put("ip",ip)
+                            .put("port",port)
+                            .put("credential_profiles",credential_profiles)
+                            .put("device_type",device_type)
+                            .put("status","Down"))
                     .onComplete(result->
                     {
                         if(result.succeeded())
@@ -126,8 +127,8 @@ public class Discovery implements CrudOperations
                             context.response()
                                     .setStatusCode(201)
                                     .end(new JsonObject()
-                                    .put("status.code",201).put("message","Discovery created successfully")
-                                    .put("data",new JsonObject().put("discovery.id", result.result())).encodePrettily());
+                                            .put("status.code",201).put("message","Discovery created successfully")
+                                            .put("data",new JsonObject().put("discovery.id", result.result())).encodePrettily());
                         }
                         else
                         {

@@ -47,13 +47,13 @@ public class Credentials implements CrudOperations
 
             var protocol = requestBody.getString("credential.profile.protocol");
 
-            if(name == null || name.isEmpty() || protocol == null || protocol.isEmpty())
+            if (name == null || name.isEmpty() || protocol == null || protocol.isEmpty())
             {
                 context.response()
                         .setStatusCode(500)
                         .end(new JsonObject()
-                                .put("status.code",500)
-                                .put("message","Please enter both username and protocol").encodePrettily());
+                                .put("status.code", 500)
+                                .put("message", "Please enter both username and protocol").encodePrettily());
 
                 return;
             }
@@ -105,7 +105,7 @@ public class Credentials implements CrudOperations
                 return;
             }
 
-            if(Helper.isNotUnique(credentials,name,"profile_name"))
+            if (Helper.isNotUnique(credentials, name, "profile_name"))
             {
                 context.response()
                         .setStatusCode(400)
@@ -116,41 +116,41 @@ public class Credentials implements CrudOperations
             }
 
             // If name is unique, insert in database
-            QueryUtility.getInstance().insert(Constants.CREDENTIALS,new JsonObject()
-                            .put("profile_name",name)
-                            .put("profile_protocol",protocol)
-                            .put("user_name",requestBody.getString("user.name"))
-                            .put("user_password",requestBody.getString("user.password"))
-                            .put("community",requestBody.getString("community"))
-                            .put("version",requestBody.getString("version")))
-                    .onComplete(result->
+            QueryUtility.getInstance().insert(Constants.CREDENTIALS, new JsonObject()
+                            .put("profile_name", name)
+                            .put("profile_protocol", protocol)
+                            .put("user_name", requestBody.getString("user.name"))
+                            .put("user_password", requestBody.getString("user.password"))
+                            .put("community", requestBody.getString("community"))
+                            .put("version", requestBody.getString("version")))
+                    .onComplete(result ->
                     {
                         if (result.succeeded())
                         {
                             Helper.insertInMap(credentials, result.result(), new JsonObject()
-                                    .put("profile_id",result.result())
-                                    .put("profile_name",name)
-                                    .put("profile_protocol",protocol)
-                                    .put("user_name",requestBody.getString("user.name"))
-                                    .put("user_password",requestBody.getString("user.password"))
-                                    .put("community",requestBody.getString("community"))
-                                    .put("version",requestBody.getString("version")));
+                                    .put("profile_id", result.result())
+                                    .put("profile_name", name)
+                                    .put("profile_protocol", protocol)
+                                    .put("user_name", requestBody.getString("user.name"))
+                                    .put("user_password", requestBody.getString("user.password"))
+                                    .put("community", requestBody.getString("community"))
+                                    .put("version", requestBody.getString("version")));
 
                             context.response()
                                     .setStatusCode(201)
                                     .end(new JsonObject()
-                                            .put("status.code",201)
-                                            .put("message","Credential profile created successfully")
-                                            .put("data",new JsonObject().put("credential.profile.id", result.result())).encodePrettily());
+                                            .put("status.code", 201)
+                                            .put("message", "Credential profile created successfully")
+                                            .put("data", new JsonObject().put("credential.profile.id", result.result())).encodePrettily());
                         }
                         else
                         {
                             context.response()
                                     .setStatusCode(500)
                                     .end(new JsonObject()
-                                            .put("status.code",500)
-                                            .put("message","Failed to create credential profile")
-                                            .put("error",result.cause().getMessage()).encodePrettily());
+                                            .put("status.code", 500)
+                                            .put("message", "Failed to create credential profile")
+                                            .put("error", result.cause().getMessage()).encodePrettily());
                         }
                     });
         }
@@ -159,9 +159,9 @@ public class Credentials implements CrudOperations
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code",500)
-                            .put("message","Server error in creating credential profile")
-                            .put("error",exception.getCause().getMessage()).encodePrettily());
+                            .put("status.code", 500)
+                            .put("message", "Server error in creating credential profile")
+                            .put("error", exception.getCause().getMessage()).encodePrettily());
         }
     }
 

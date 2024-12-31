@@ -15,8 +15,6 @@ import org.example.Main;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.example.util.Helper.insertInMap;
-
 public class QueryUtility
 {
     private static QueryUtility instance;
@@ -35,7 +33,7 @@ public class QueryUtility
         return instance;
     }
 
-    private static PgPool client;
+    private static final PgPool client;
 
     static
     {
@@ -59,49 +57,68 @@ public class QueryUtility
     {
         var promise = Promise.<Long>promise();
 
-        var columns = new StringBuilder();
-
-        var placeholders = new StringBuilder();
-
-        var values = new ArrayList<>();
-
-        data.forEach(entry ->
+        Main.vertx.executeBlocking(insert->
         {
-            columns.append(entry.getKey()).append(", ");
+            try
+            {
+                var columns = new StringBuilder();
 
-            placeholders.append("$").append(values.size() + 1).append(", ");
+                var placeholders = new StringBuilder();
 
-            values.add(entry.getValue());
+                var values = new ArrayList<>();
+
+                data.forEach(entry ->
+                {
+                    columns.append(entry.getKey()).append(", ");
+
+                    placeholders.append("$").append(values.size() + 1).append(", ");
+
+                    values.add(entry.getValue());
+                });
+
+                columns.setLength(columns.length() - 2);
+
+                placeholders.setLength(placeholders.length() - 2);
+
+                client.preparedQuery("INSERT INTO " + tableName + " (" + columns + ") VALUES (" + placeholders + ") RETURNING *") //* means every column
+                        .execute(Tuple.from(values), execute -> {
+                            if (execute.succeeded())
+                            {
+                                var rows = execute.result();
+
+                                if (rows.size() > 0)
+                                {
+                                    var id = rows.iterator().next().getLong(0);
+
+                                    insert.complete(id);
+                                }
+                                else
+                                {
+                                    insert.fail("No rows returned");
+                                }
+                            }
+                            else
+                            {
+                                insert.fail(execute.cause().getMessage());
+                            }
+                        });
+            }
+            catch (Exception exception)
+            {
+                insert.fail(exception);
+            }
+        },false,result->
+        {
+            if (result.succeeded())
+            {
+                promise.complete((Long) result.result());
+            }
+            else
+            {
+                promise.fail(result.cause());
+            }
         });
 
-        columns.setLength(columns.length() - 2);
-
-        placeholders.setLength(placeholders.length() - 2);
-
-        client.preparedQuery("INSERT INTO " + tableName + " (" + columns + ") VALUES (" + placeholders + ") RETURNING *") //* means every column
-                .execute(Tuple.from(values), execute -> {
-                    if (execute.succeeded())
-                    {
-                        var rows = execute.result();
-
-                        if (rows.size() > 0)
-                        {
-                            var id = rows.iterator().next().getLong(0);
-
-//                            insertInMap(tableName,id,data);
-
-                            promise.complete(id);
-                        }
-                        else
-                        {
-                            promise.fail("Some problem");
-                        }
-                    }
-                    else
-                    {
-                        promise.fail(execute.cause().getMessage());
-                    }
-                });
         return promise.future();
     }
 
@@ -109,45 +126,73 @@ public class QueryUtility
     {
         var promise = Promise.<Void>promise();
 
-        client.preparedQuery("DELETE FROM "+ tableName + " WHERE " + column + " = $1")
-                .execute(Tuple.of(id), execute ->{
-                    if(execute.succeeded())
+        Main.vertx.executeBlocking(delete ->
+        {
+            try
+            {
+                String query = "DELETE FROM " + tableName + " WHERE " + column + " = $1";
+
+                client.preparedQuery(query).execute(Tuple.of(id), execute ->
+                {
+                    if (execute.succeeded())
                     {
-                        if(execute.result().rowCount()>0)
+                        if (execute.result().rowCount() > 0)
                         {
-                            promise.complete();
+                            delete.complete();
                         }
                         else
                         {
-                            promise.fail("Information not found");
+                            delete.fail("Information not found");
                         }
                     }
                     else
                     {
-                        promise.fail(execute.cause());
+                        delete.fail(execute.cause());
                     }
                 });
-
+            }
+            catch (Exception e)
+            {
+                delete.fail(e);
+            }
+        },false, result ->
+        {
+            if (result.succeeded())
+            {
+                promise.complete();
+            }
+            else
+            {
+                promise.fail(result.cause());
+            }
+        });
         return promise.future();
     }
 
+
     public Future<JsonArray> getAll(String tableName)
     {
-        var promise = Promise.<JsonArray>promise();
+        Promise<JsonArray> promise = Promise.promise();
 
-        client.preparedQuery("SELECT * FROM "+ tableName)
-                .execute(execute->{
-                    if(execute.succeeded())
+        Main.vertx.executeBlocking(getAll ->
+        {
+            try
+            {
+                String query = "SELECT * FROM " + tableName;
+
+                client.preparedQuery(query).execute(execute ->
+                {
+                    if (execute.succeeded())
                     {
                         var rows = execute.result();
 
                         var response = new JsonArray();
 
-                        for(Row row : rows)
+                        for (Row row : rows)
                         {
                             var json = new JsonObject();
 
-                            for(int i=0;i<row.size();i++)
+                            for (int i = 0; i < row.size(); i++)
                             {
                                 var columnName = row.getColumnName(i);
 
@@ -157,16 +202,33 @@ public class QueryUtility
                             }
                             response.add(json);
                         }
-                        promise.complete(response);
 
+                        getAll.complete(response);
                     }
                     else
                     {
-                        promise.fail(execute.cause());
+                        getAll.fail(execute.cause());
                     }
                 });
+            }
+            catch (Exception exception)
+            {
+                getAll.fail(exception);
+            }
+        }, false,result ->
+        {
+            if (result.succeeded())
+            {
+                promise.complete((JsonArray) result.result());
+            }
+            else
+            {
+                promise.fail(result.cause());
+            }
+        });
         return promise.future();
     }
+
 
     public Future<JsonObject> get(String tableName, List<String> columns, JsonObject filter)
     {
@@ -256,59 +318,77 @@ public class QueryUtility
     {
         var promise = Promise.<Boolean>promise();
 
-        var setClause = new StringBuilder();
-
-        var whereClause = new StringBuilder();
-
-        var values = new ArrayList<>();
-
-        // Construct the SET clause
-        data.forEach(entry ->
+        Main.vertx.executeBlocking(update ->
         {
-            if (!setClause.isEmpty())
+            try
             {
-                setClause.append(", ");
-            }
+                var setClause = new StringBuilder();
 
-            setClause.append(entry.getKey()).append(" = $").append(values.size() + 1);
+                var whereClause = new StringBuilder();
 
-            values.add(entry.getValue());
-        });
+                var values = new ArrayList<>();
 
-        // Construct the WHERE clause
-        filter.forEach(entry ->
-        {
-            if (!whereClause.isEmpty())
-            {
-                whereClause.append(" AND ");
-            }
-            whereClause.append(entry.getKey()).append(" = $").append(values.size() + 1);
+                // Construct the SET clause
+                data.forEach(entry ->
+                {
+                    if (!setClause.isEmpty())
+                    {
+                        setClause.append(", ");
+                    }
+                    setClause.append(entry.getKey()).append(" = $").append(values.size() + 1);
 
-            values.add(entry.getValue());
-        });
+                    values.add(entry.getValue());
+                });
 
-        // Execute the query
-        client.preparedQuery("UPDATE " + tableName + " SET " + setClause + " WHERE " + whereClause)
-                .execute(Tuple.from(values), execute ->
+                // Construct the WHERE clause
+                filter.forEach(entry ->
+                {
+                    if (!whereClause.isEmpty())
+                    {
+                        whereClause.append(" AND ");
+                    }
+                    whereClause.append(entry.getKey()).append(" = $").append(values.size() + 1);
+
+                    values.add(entry.getValue());
+                });
+
+                // Prepare and execute the query
+                var query = "UPDATE " + tableName + " SET " + setClause + " WHERE " + whereClause;
+
+                client.preparedQuery(query).execute(Tuple.from(values), execute ->
                 {
                     if (execute.succeeded())
                     {
                         if (execute.result().rowCount() > 0)
                         {
-                            promise.complete(true); // Update succeeded
+                            update.complete(true); // Update succeeded
                         }
                         else
                         {
-                            promise.fail("No matching rows found"); // No rows updated
+                            update.fail("No matching rows found"); // No rows updated
                         }
                     }
                     else
                     {
-                        promise.fail(execute.cause());
+                        update.fail(execute.cause());
                     }
                 });
-
+            }
+            catch (Exception exception)
+            {
+                update.fail(exception); // Handle any unexpected exceptions
+            }
+        }, false,result ->
+        {
+            if (result.succeeded())
+            {
+                promise.complete((Boolean) result.result());
+            }
+            else
+            {
+                promise.fail(result.cause());
+            }
+        });
         return promise.future();
     }
-
 }

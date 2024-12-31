@@ -12,9 +12,8 @@ import org.example.sevices.FileSender;
 import org.example.sevices.FileWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Main
 {
@@ -22,13 +21,13 @@ public class Main
 
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static final Map<Long, JsonObject> discoveries = new HashMap<>();
+    public static final Map<Long, JsonObject> discoveries = new ConcurrentHashMap<>();
 
-    public static final Map<Long, JsonObject> credentials = new HashMap<>();
+    public static final Map<Long, JsonObject> credentials = new ConcurrentHashMap<>();
 
-    public static final Map<Long, JsonObject> objects = new HashMap<>();
+    public static final Map<Long, JsonObject> objects = new ConcurrentHashMap<>();
 
-    public static final Map<Long, JsonObject> metrics = new HashMap<>();
+    public static final Map<Long, JsonObject> metrics = new ConcurrentHashMap<>();
 
 
     public static void main(String[] args)
