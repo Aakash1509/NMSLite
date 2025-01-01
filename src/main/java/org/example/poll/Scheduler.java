@@ -6,6 +6,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
+import org.example.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -56,6 +57,7 @@ public class Scheduler extends AbstractVerticle
 
         try
         {
+            //objects contains all the provisioned devices
             for(var entry : objects.entrySet())
             {
                 var metricsArray = fetchMetricData(entry.getKey());
@@ -103,6 +105,9 @@ public class Scheduler extends AbstractVerticle
 
             return;
         }
+
+        var currentTime = System.currentTimeMillis();
+
         for (Map.Entry<Long, JsonObject> entry : pollDevices.entrySet())
         {
             var deviceMetrics = entry.getValue();
@@ -115,43 +120,35 @@ public class Scheduler extends AbstractVerticle
             {
                 var metricData = metrics.getJsonObject(i);
 
-                preparePolling(device, metricData);
+                var pollTime = metricData.getInteger("metric_poll_time")*1000L; // Convert to milliseconds
+
+                var lastPolled = metricData.getLong("last_polled",0L);
+
+                if(currentTime - lastPolled > pollTime)
+                {
+                    preparePolling(device, metricData, currentTime);
+
+                    metricData.put("last_polled",currentTime);
+
+                    Main.metrics.put(metricData.getLong("metric_id"),metricData);
+                }
             }
         }
     }
 
-    private final Map<String, Long> activeDevices = new ConcurrentHashMap<>(); //THis map will contain which devices are currently undergoing polling
-
-    private void preparePolling(JsonObject objectData, JsonObject metricData)
+    private void preparePolling(JsonObject objectData, JsonObject metricData, long currentTime)
     {
         try
         {
-            var pollerId = objectData.getString("ip") + metricData.getString("metric_group_name");
+            vertx.eventBus().send(Constants.OBJECT_POLL, new JsonObject()
+                    .put("credential.profile", objectData.getLong("credential_profile"))
+                    .put("ip", objectData.getString("ip"))
+                    .put("port",objectData.getInteger("port"))
+                    .put("device_type", objectData.getString("device_type"))
+                    .put("metric.group.name", metricData.getString("metric_group_name"))
+                    .put("timestamp", currentTime / 1000));
 
-            var pollTime = metricData.getInteger("metric_poll_time") * 1000L; // Convert to milliseconds
-
-            // Check if the device already exists with the same interval
-            if (activeDevices.containsKey(pollerId))
-            {
-                return;
-            }
-
-            // Schedule the polling
-            long timerId = vertx.setPeriodic(pollTime, id ->
-            {
-                vertx.eventBus().send(Constants.OBJECT_POLL, new JsonObject()
-                        .put("credential.profile", objectData.getLong("credential_profile"))
-                        .put("ip", objectData.getString("ip"))
-                        .put("port",objectData.getInteger("port"))
-                        .put("device_type", objectData.getString("device_type"))
-                        .put("metric.group.name", metricData.getString("metric_group_name"))
-                        .put("timestamp", System.currentTimeMillis() / 1000));
-
-                logger.info("Polling triggered for {} at {}", objectData.getString("hostname"), objectData.getString("ip"));
-            });
-
-            // Update the active devices map
-            activeDevices.put(pollerId, timerId);
+            logger.info("Polling triggered for {} at {}", objectData.getString("hostname"), objectData.getString("ip"));
         }
         catch (Exception exception)
         {

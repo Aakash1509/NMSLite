@@ -48,7 +48,8 @@ public class Server extends AbstractVerticle
                         .put("message","Not found")
                         .put("data","Requested endpoint doesn't exist").encodePrettily()));
 
-        router.route().failureHandler(ctx->{
+        router.route().failureHandler(ctx->
+        {
             if(ctx.statusCode()==404)
             {
                 ctx.reroute("/notfound");
@@ -63,7 +64,8 @@ public class Server extends AbstractVerticle
             }
         });
 
-        router.route().handler(ctx -> {
+        router.route().handler(ctx ->
+        {
             ctx.fail(404); // Manually trigger a 404 for unmatched routes
         });
 

@@ -14,7 +14,7 @@ public class FileWriter extends AbstractVerticle
     @Override
     public void start()
     {
-        vertx.eventBus().<JsonObject>consumer(Constants.FILE_WRITE, message ->
+        vertx.eventBus().<JsonObject>localConsumer(Constants.FILE_WRITE, message ->
         {
             vertx.executeBlocking(promise ->
             {
@@ -30,7 +30,7 @@ public class FileWriter extends AbstractVerticle
 
                     var filePath = Constants.BASE_DIRECTORY + "/" + String.format("%s.txt", timestamp);
 
-                    // Perform blocking file operations
+                    // If file exists then append data or else write in a new file
                     if (vertx.fileSystem().existsBlocking(filePath))
                     {
                         appendToFile(filePath, ip, metrics);

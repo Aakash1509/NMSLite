@@ -28,7 +28,6 @@ public class Helper
         var matcher = pattern.matcher(ip);
 
         return matcher.matches();
-
     }
 
     public static boolean validPort(int port)

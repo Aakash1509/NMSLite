@@ -1,7 +1,9 @@
 package org.example.poll;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.WorkerExecutor;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
+import org.example.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
@@ -12,11 +14,13 @@ public class Poller extends AbstractVerticle
 {
     private static final Logger logger = LoggerFactory.getLogger(Poller.class);
 
+    private static final WorkerExecutor poll = Main.vertx.createSharedWorkerExecutor("polling",10,60, TimeUnit.SECONDS);
+
     public void start()
     {
         try
         {
-            vertx.eventBus().<JsonObject>consumer(Constants.OBJECT_POLL, message ->
+            vertx.eventBus().<JsonObject>localConsumer(Constants.OBJECT_POLL, message ->
             {
                 var pollingData = message.body();
 
@@ -52,7 +56,7 @@ public class Poller extends AbstractVerticle
     {
         logger.info("Started polling of ip: {}",pollingData.getString("ip"));
 
-        vertx.executeBlocking(promise ->
+        poll.executeBlocking(promise ->
         {
             try
             {

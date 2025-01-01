@@ -32,29 +32,36 @@ public class Main
 
     public static void main(String[] args)
     {
+        try
+        {
             init()
 
-                .compose(result->vertx.deployVerticle(new Server()))
+                    .compose(result->vertx.deployVerticle(new Server()))
 
-                .compose(result -> vertx.deployVerticle(new Scheduler()))
+                    .compose(result -> vertx.deployVerticle(new Scheduler()))
 
-                .compose(result -> vertx.deployVerticle(new Poller()))
+                    .compose(result -> vertx.deployVerticle(new Poller()))
 
-                .compose(result -> vertx.deployVerticle(new FileWriter()))
+                    .compose(result -> vertx.deployVerticle(new FileWriter()))
 
-                .compose(result-> vertx.deployVerticle(new FileSender()))
+                    .compose(result-> vertx.deployVerticle(new FileSender()))
 
-                .onComplete(result ->
-                {
-                    if (result.succeeded())
+                    .onComplete(result ->
                     {
-                        logger.info("All verticles deployed successfully");
-                    }
-                    else
-                    {
-                        logger.error("Error deploying verticles", result.cause());
-                    }
-                });
+                        if (result.succeeded())
+                        {
+                            logger.info("All verticles deployed successfully");
+                        }
+                        else
+                        {
+                            logger.error("Error deploying verticles", result.cause());
+                        }
+                    });
+        }
+        catch (Exception exception)
+        {
+            logger.error("Error occurred : ",exception);
+        }
     }
 
     private static CompositeFuture init()
@@ -89,7 +96,6 @@ public class Main
 
                     map.put(object.getLong(id), object);
                 }
-
                 promise.complete();
             }
             else
@@ -100,5 +106,4 @@ public class Main
 
         return promise.future();
     }
-
 }

@@ -6,21 +6,20 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import org.example.Constants;
+import org.example.Main;
 import org.example.database.QueryUtility;
 import org.example.util.Helper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.vertx.core.Future;
 import java.util.concurrent.TimeUnit;
-
-import static org.example.Main.vertx;
 import static org.example.Main.*;
 
 public class Discovery implements CrudOperations
 {
     private static final Logger logger = LoggerFactory.getLogger(Discovery.class);
 
-    private static final WorkerExecutor executor = vertx.createSharedWorkerExecutor("discovery",5,60, TimeUnit.SECONDS);
+    private static final WorkerExecutor discover = Main.vertx.createSharedWorkerExecutor("discovery",5,60, TimeUnit.SECONDS);
 
     public void route(Router discoveryRouter)
     {
@@ -417,7 +416,7 @@ public class Discovery implements CrudOperations
 
             deviceInfo.put("discovery.credential.profiles",records);
 
-            executor.<JsonObject>executeBlocking(pingFuture->
+            discover.<JsonObject>executeBlocking(pingFuture->
                     {
                         try
                         {
@@ -501,7 +500,7 @@ public class Discovery implements CrudOperations
 
     private Future<JsonObject> validCredential(JsonObject deviceInfo)
     {
-        return executor.executeBlocking(promise ->
+        return discover.executeBlocking(promise ->
         {
             try
             {
