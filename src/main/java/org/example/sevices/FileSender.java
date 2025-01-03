@@ -43,9 +43,7 @@ public class FileSender extends AbstractVerticle
         {
             try
             {
-                var files = vertx.fileSystem().readDirBlocking(Constants.BASE_DIRECTORY);
-
-                promise.complete(files);
+                promise.complete(vertx.fileSystem().readDirBlocking(Constants.BASE_DIRECTORY));
             }
             catch (Exception exception)
             {
@@ -67,9 +65,7 @@ public class FileSender extends AbstractVerticle
         {
             try
             {
-                var fileContent = vertx.fileSystem().readFileBlocking(filePath).toString();
-
-                promise.complete(fileContent);
+                promise.complete(vertx.fileSystem().readFileBlocking(filePath).toString());
             }
             catch (Exception exception)
             {

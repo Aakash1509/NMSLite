@@ -3,14 +3,12 @@ package org.example.poll;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Comparator;
-import java.util.PriorityQueue;
+import java.util.*;
 
 import static org.example.Main.metrics;
 import static org.example.Main.objects;
@@ -19,7 +17,7 @@ public class Scheduler extends AbstractVerticle
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Scheduler.class);
 
-    private final PriorityQueue<JsonObject> pollQueue = new PriorityQueue<>(Comparator.comparingLong(pollTime -> pollTime.getLong("nextPollTime")));
+    private final Map<Long,Long> pollDevices = new HashMap<>(); //This map will contain metric_id and the next polling time
 
     public void start()
     {
@@ -28,15 +26,13 @@ public class Scheduler extends AbstractVerticle
             //If device is provisioned after I have fetched provisioned devices from database
             vertx.eventBus().<JsonObject>localConsumer(Constants.OBJECT_PROVISION, object->
             {
-                var objectID = object.body().getLong("object_id");
-
-                var metricsArray = fetchMetricData(objectID);
-
-                var deviceMetrics = new JsonObject()
-                                    .put("device", object.body())
-                                    .put("metrics", metricsArray);
-
-                addToQueue(deviceMetrics);
+                for(var entry : metrics.entrySet())
+                {
+                    if(Objects.equals(entry.getValue().getLong("metric_object"), object.body().getLong("object_id")))
+                    {
+                        pollDevices.put(entry.getKey(), System.currentTimeMillis()+entry.getValue().getInteger("metric_poll_time")*1000L);
+                    }
+                }
             });
 
             //Will fetch provisioned devices from database as soon as this verticle deploys
@@ -57,65 +53,24 @@ public class Scheduler extends AbstractVerticle
 
         try
         {
-            //objects contains all the provisioned devices
-            for(var entry : objects.entrySet())
+            for(var entry : metrics.entrySet())
             {
-                var metricsArray = fetchMetricData(entry.getKey());
-
-                var deviceMetrics = new JsonObject()
-                        .put("device",entry.getValue()) //Device contains details of object
-                        .put("metrics",metricsArray); //Metrics contains data of that particular object
-
-                addToQueue(deviceMetrics);
+                pollDevices.put(entry.getKey(), System.currentTimeMillis()+entry.getValue().getInteger("metric_poll_time")*1000L);
             }
             promise.complete();
         }
         catch (Exception exception)
         {
-            LOGGER.error("Error in getDevices: {}", exception.getMessage());
+            LOGGER.error("Error in getting devices from database: {}", exception.getMessage());
 
             promise.fail(exception.getMessage());
         }
-
         return promise.future();
-    }
-
-    private JsonArray fetchMetricData(Long objectID)
-    {
-        var metricsArray = new JsonArray();
-
-        // Iterate through the metrics map and collect metrics for the given objectId
-        for (var entry : metrics.entrySet())
-        {
-            var metric = entry.getValue();
-
-            if (metric.getLong("metric_object").equals(objectID))
-            {
-                metricsArray.add(metric);
-            }
-        }
-        return metricsArray;
-    }
-
-    private void addToQueue(JsonObject deviceMetrics)
-    {
-        var metrics = deviceMetrics.getJsonArray("metrics");
-
-        for (int i = 0; i < metrics.size(); i++)
-        {
-            var metric = metrics.getJsonObject(i);
-
-            // Adding the task for each metric to the queue with its own poll time
-            pollQueue.add(new JsonObject()
-                    .put("device", deviceMetrics.getJsonObject("device"))
-                    .put("metric", metric)
-                    .put("nextPollTime", System.currentTimeMillis()+metric.getLong("metric_poll_time") * 1000L));
-        }
     }
 
     private void checkAndPreparePolling()
     {
-        if (pollQueue.isEmpty())
+        if(pollDevices.isEmpty())
         {
             LOGGER.info("No provisioned devices currently");
 
@@ -124,25 +79,14 @@ public class Scheduler extends AbstractVerticle
 
         var currentTime = System.currentTimeMillis();
 
-        var task = pollQueue.poll();
-
-        var nextPollTime = task.getLong("nextPollTime");
-
-        // If it's time to poll the metric
-        if (currentTime >= nextPollTime)
+        for(var entry : pollDevices.entrySet())
         {
-            preparePolling(task.getJsonObject("device"), task.getJsonObject("metric"), currentTime);
+            if(currentTime >= entry.getValue())
+            {
+                preparePolling(objects.get(metrics.get(entry.getKey()).getLong("metric_object")),metrics.get(entry.getKey()),currentTime);
 
-            var pollTime = task.getJsonObject("metric").getLong("metric_poll_time") * 1000L;
-
-            //Updating poll time
-            task.put("nextPollTime", currentTime + pollTime);
-
-            pollQueue.add(task);
-        }
-        else
-        {
-            pollQueue.add(task);
+                pollDevices.put(entry.getKey(),entry.getValue()+currentTime);
+            }
         }
     }
 

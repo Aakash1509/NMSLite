@@ -139,12 +139,7 @@ public class Provision
                     .onSuccess(result ->
                     {
                         Main.vertx.eventBus().send(Constants.OBJECT_PROVISION,new JsonObject()
-                                .put("object_id",result.getLong("object_id"))
-                                .put("credential_profile", result.getLong("credential_profile"))
-                                .put("ip",result.getString("ip"))
-                                .put("port",result.getInteger("port"))
-                                .put("hostname",result.getString("hostname"))
-                                .put("device_type",result.getString("device_type")));
+                                .put("object_id",result.getLong("object_id")));
 
                         context.response()
                                 .setStatusCode(201)
