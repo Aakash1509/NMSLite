@@ -13,13 +13,13 @@ import static org.example.Main.credentials;
 
 public class Credentials implements CrudOperations
 {
-    private static final Logger logger = LoggerFactory.getLogger(Credentials.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Credentials.class);
 
     public void route(Router credentialRouter)
     {
         try
         {
-            credentialRouter.post("/create").handler(this::create);
+            credentialRouter.post("/").handler(this::create);
 
             credentialRouter.put("/:id").handler(this::update);
 
@@ -31,7 +31,7 @@ public class Credentials implements CrudOperations
         }
         catch (Exception exception)
         {
-            logger.error("Error in credential routing", exception);
+            LOGGER.error("Error in credential routing", exception);
         }
     }
 

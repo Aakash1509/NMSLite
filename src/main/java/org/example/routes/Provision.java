@@ -10,19 +10,16 @@ import io.vertx.ext.web.RoutingContext;
 import org.example.database.QueryUtility;
 import org.example.Constants;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.example.Main.*;
 
 
 public class Provision
 {
-    private static final Logger logger = LoggerFactory.getLogger(Provision.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Provision.class);
 
-    private final HashMap<String, Integer> linuxMetrics = new HashMap<>()
+    private final Map<String, Integer> linuxMetrics = new HashMap<>()
     {{
         put("Linux.Device", Constants.DEVICE_POLL_INTERVAL);
 
@@ -33,7 +30,7 @@ public class Provision
         put("Linux.Disk", Constants.DISK_POLL_INTERVAL);
     }};
 
-    private final HashMap<String, Integer> snmpMetrics = new HashMap<>()
+    private final Map<String, Integer> snmpMetrics = new HashMap<>()
     {{
         put("SNMP.Device", Constants.SNMP_POLL_INTERVAL);
 
@@ -48,7 +45,7 @@ public class Provision
         }
         catch(Exception exception)
         {
-            logger.error("Error in objects routing", exception);
+            LOGGER.error("Error in objects routing", exception);
         }
     }
 
@@ -116,7 +113,7 @@ public class Provision
                     .compose(discoveryInfo ->
                     {
                         // Attaching metrics for the provisioned object
-                        List<Future<Long>> metricFutures = new ArrayList<>();
+                        var metricFutures = new ArrayList<Future<Long>>();
 
                         (Objects.equals(discoveryInfo.getString("device_type"), "Linux") ? linuxMetrics : snmpMetrics).forEach((key, value) ->
                         {

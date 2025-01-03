@@ -17,15 +17,15 @@ import static org.example.Main.*;
 
 public class Discovery implements CrudOperations
 {
-    private static final Logger logger = LoggerFactory.getLogger(Discovery.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Discovery.class);
 
-    private static final WorkerExecutor discover = Main.vertx.createSharedWorkerExecutor("discovery",5,60, TimeUnit.SECONDS);
+    private static final WorkerExecutor discover = Main.vertx.createSharedWorkerExecutor("discovery",10,60, TimeUnit.SECONDS);
 
     public void route(Router discoveryRouter)
     {
         try
         {
-            discoveryRouter.post("/create").handler(this::create);
+            discoveryRouter.post("/").handler(this::create);
 
             discoveryRouter.put("/:id").handler(this::update);
 
@@ -39,7 +39,7 @@ public class Discovery implements CrudOperations
         }
         catch (Exception exception)
         {
-            logger.error("Error in discovery routing", exception);
+            LOGGER.error("Error in discovery routing", exception);
         }
     }
 

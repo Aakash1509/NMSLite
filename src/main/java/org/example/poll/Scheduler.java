@@ -6,20 +6,20 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
-import org.example.Main;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.Comparator;
+import java.util.PriorityQueue;
 
 import static org.example.Main.metrics;
 import static org.example.Main.objects;
 
 public class Scheduler extends AbstractVerticle
 {
-    private static final Logger logger = LoggerFactory.getLogger(Scheduler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Scheduler.class);
 
-    private final Map<Long,JsonObject> pollDevices = new ConcurrentHashMap<>(); //Will contain provisioned devices with their metrics
+    private final PriorityQueue<JsonObject> pollQueue = new PriorityQueue<>(Comparator.comparingLong(pollTime -> pollTime.getLong("nextPollTime")));
 
     public void start()
     {
@@ -36,7 +36,7 @@ public class Scheduler extends AbstractVerticle
                                     .put("device", object.body())
                                     .put("metrics", metricsArray);
 
-                pollDevices.put(objectID, deviceMetrics);
+                addToQueue(deviceMetrics);
             });
 
             //Will fetch provisioned devices from database as soon as this verticle deploys
@@ -46,7 +46,7 @@ public class Scheduler extends AbstractVerticle
         }
         catch (Exception exception)
         {
-            logger.error(exception.getMessage(),exception);
+            LOGGER.error(exception.getMessage(),exception);
         }
     }
 
@@ -66,13 +66,13 @@ public class Scheduler extends AbstractVerticle
                         .put("device",entry.getValue()) //Device contains details of object
                         .put("metrics",metricsArray); //Metrics contains data of that particular object
 
-                pollDevices.put(entry.getKey(),deviceMetrics);
+                addToQueue(deviceMetrics);
             }
             promise.complete();
         }
         catch (Exception exception)
         {
-            logger.error("Error in getDevices: {}", exception.getMessage());
+            LOGGER.error("Error in getDevices: {}", exception.getMessage());
 
             promise.fail(exception.getMessage());
         }
@@ -97,42 +97,52 @@ public class Scheduler extends AbstractVerticle
         return metricsArray;
     }
 
+    private void addToQueue(JsonObject deviceMetrics)
+    {
+        var metrics = deviceMetrics.getJsonArray("metrics");
+
+        for (int i = 0; i < metrics.size(); i++)
+        {
+            var metric = metrics.getJsonObject(i);
+
+            // Adding the task for each metric to the queue with its own poll time
+            pollQueue.add(new JsonObject()
+                    .put("device", deviceMetrics.getJsonObject("device"))
+                    .put("metric", metric)
+                    .put("nextPollTime", System.currentTimeMillis()+metric.getLong("metric_poll_time") * 1000L));
+        }
+    }
+
     private void checkAndPreparePolling()
     {
-        if(pollDevices.isEmpty())
+        if (pollQueue.isEmpty())
         {
-            logger.info("No provisioned devices currently");
+            LOGGER.info("No provisioned devices currently");
 
             return;
         }
 
         var currentTime = System.currentTimeMillis();
 
-        for (Map.Entry<Long, JsonObject> entry : pollDevices.entrySet())
+        var task = pollQueue.poll();
+
+        var nextPollTime = task.getLong("nextPollTime");
+
+        // If it's time to poll the metric
+        if (currentTime >= nextPollTime)
         {
-            var deviceMetrics = entry.getValue();
+            preparePolling(task.getJsonObject("device"), task.getJsonObject("metric"), currentTime);
 
-            var device = deviceMetrics.getJsonObject("device");
+            var pollTime = task.getJsonObject("metric").getLong("metric_poll_time") * 1000L;
 
-            var metrics = deviceMetrics.getJsonArray("metrics");
+            //Updating poll time
+            task.put("nextPollTime", currentTime + pollTime);
 
-            for (int i = 0; i < metrics.size(); i++)
-            {
-                var metricData = metrics.getJsonObject(i);
-
-                var pollTime = metricData.getInteger("metric_poll_time")*1000L; // Convert to milliseconds
-
-                var lastPolled = metricData.getLong("last_polled",0L);
-
-                if(currentTime - lastPolled > pollTime)
-                {
-                    preparePolling(device, metricData, currentTime);
-
-                    metricData.put("last_polled",currentTime);
-
-                    Main.metrics.put(metricData.getLong("metric_id"),metricData);
-                }
-            }
+            pollQueue.add(task);
+        }
+        else
+        {
+            pollQueue.add(task);
         }
     }
 
@@ -148,11 +158,11 @@ public class Scheduler extends AbstractVerticle
                     .put("metric.group.name", metricData.getString("metric_group_name"))
                     .put("timestamp", currentTime / 1000));
 
-            logger.info("Polling triggered for {} at {}", objectData.getString("hostname"), objectData.getString("ip"));
+            LOGGER.info("Polling triggered for {} at {}", objectData.getString("hostname"), objectData.getString("ip"));
         }
         catch (Exception exception)
         {
-            logger.error(exception.getMessage(), exception);
+            LOGGER.error(exception.getMessage(), exception);
         }
     }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 
 public class FileSender extends AbstractVerticle
 {
-    private static final Logger logger = LoggerFactory.getLogger(FileSender.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileSender.class);
 
     private ZMQ.Socket socket;
 
@@ -33,7 +33,7 @@ public class FileSender extends AbstractVerticle
         }
         catch (Exception exception)
         {
-            logger.error("Failed to initialize ZMQ context: {}", exception.getMessage(), exception);
+            LOGGER.error("Failed to initialize ZMQ context: {}", exception.getMessage(), exception);
         }
     }
 
@@ -53,19 +53,11 @@ public class FileSender extends AbstractVerticle
             }
         }).onSuccess(files ->
         {
-            if (!files.isEmpty())
-            {
-                logger.info("Found {} files", files.size());
+            files.forEach(this::sendFile);
 
-                files.forEach(this::sendFile);
-            }
-            else
-            {
-                logger.info("Currently no polled data available");
-            }
         }).onFailure(error ->
         {
-            logger.error("Error occurred while reading directory: {}", error.getMessage());
+            LOGGER.error("Error occurred while reading directory: {}", error.getMessage());
         });
     }
 
@@ -98,27 +90,12 @@ public class FileSender extends AbstractVerticle
                             .put("filename", fileName)
                             .put("content", part);
 
-                    boolean result = socket.send(message.encode(), 0);
-
-                    if (!result)
-                    {
-                        logger.error("Failed to send message via ZMQ.");
-                    }
-                    else
-                    {
-                        logger.info("File part sent to ZMQ: {}", fileName);
-                    }
+                    socket.send(message.encode(), 0);
                 }
             }
 
             // Delete file after sending
             return vertx.fileSystem().delete(filePath);
-        }).onSuccess(v ->
-        {
-            logger.info("File deleted successfully.");
-        }).onFailure(error ->
-        {
-            logger.error("Error: {}", error.getMessage());
         });
     }
 

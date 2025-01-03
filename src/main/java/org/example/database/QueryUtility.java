@@ -361,7 +361,7 @@ public class QueryUtility
                     {
                         if (execute.result().rowCount() > 0)
                         {
-                            update.complete(true); // Update succeeded
+                           update.complete(true); // Update succeeded
                         }
                         else
                         {

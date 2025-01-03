@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 public class FileWriter extends AbstractVerticle
 {
-    private static final Logger logger = LoggerFactory.getLogger(FileWriter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileWriter.class);
 
     @Override
     public void start()
@@ -20,43 +20,33 @@ public class FileWriter extends AbstractVerticle
             {
                 try
                 {
-                    var data = message.body();
+                    var metricData = message.body().getJsonObject("metrics");
 
-                    var metrics = data.getJsonObject("metrics").getJsonObject("result");
+                    var timestamp = message.body().getString("timestamp");
 
-                    var timestamp = data.getString("timestamp");
+                    var context = metricData.getJsonObject("result");
 
-                    var ip = data.getJsonObject("metrics").getString("ip");
+                    var ip = metricData.getString("ip");
 
                     var filePath = Constants.BASE_DIRECTORY + "/" + String.format("%s.txt", timestamp);
 
                     // If file exists then append data or else write in a new file
                     if (vertx.fileSystem().existsBlocking(filePath))
                     {
-                        appendToFile(filePath, ip, metrics);
+                        appendToFile(filePath, ip, context);
                     }
                     else
                     {
-                        writeFile(filePath, ip, metrics);
+                        writeFile(filePath, ip, context);
                     }
 
                     promise.complete();
                 }
                 catch (Exception exception)
                 {
-                    logger.error("Error during file operation: {}", exception.getMessage(), exception);
+                    LOGGER.error("Error during file operation: {}", exception.getMessage(), exception);
 
                     promise.fail(exception);
-                }
-            }, result ->
-            {
-                if (result.succeeded())
-                {
-                    logger.info("File operation completed successfully");
-                }
-                else
-                {
-                    logger.error("File operation failed: {}", result.cause().getMessage());
                 }
             });
         });
@@ -66,22 +56,14 @@ public class FileWriter extends AbstractVerticle
     {
         try
         {
-            var existingData = vertx.fileSystem().readFileBlocking(filePath).toString();
-
-            var separator = "---\n";
-
-            var newData = new JsonObject()
+            vertx.fileSystem().writeFileBlocking(filePath, Buffer.buffer(vertx.fileSystem().readFileBlocking(filePath).toString() + "---\n" + new JsonObject()
                     .put("ip", ip)
                     .put("result", metrics)
-                    .encodePrettily();
-
-            vertx.fileSystem().writeFileBlocking(filePath, Buffer.buffer(existingData + separator + newData));
-
-            logger.info("Data appended successfully to: {}", filePath);
+                    .encodePrettily()));
         }
         catch (Exception exception)
         {
-            logger.error("Error appending to file: {}", exception.getMessage(), exception);
+            LOGGER.error("Error appending to file: {}", exception.getMessage(), exception);
 
             throw exception;
         }
@@ -91,18 +73,14 @@ public class FileWriter extends AbstractVerticle
     {
         try
         {
-            var newData = new JsonObject()
+            vertx.fileSystem().writeFileBlocking(filePath, Buffer.buffer(new JsonObject()
                     .put("ip", ip)
                     .put("result", metrics)
-                    .encodePrettily();
-
-            vertx.fileSystem().writeFileBlocking(filePath, Buffer.buffer(newData));
-
-            logger.info("File written successfully: {}", filePath);
+                    .encodePrettily()));
         }
         catch (Exception exception)
         {
-            logger.error("Error writing to file: {}", exception.getMessage(), exception);
+            LOGGER.error("Error writing to file: {}", exception.getMessage(), exception);
 
             throw exception;
         }

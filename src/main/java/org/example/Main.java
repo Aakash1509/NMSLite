@@ -19,7 +19,7 @@ public class Main
 {
     public static final Vertx vertx = Vertx.vertx();
 
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static final Map<Long, JsonObject> discoveries = new ConcurrentHashMap<>();
 
@@ -50,17 +50,17 @@ public class Main
                     {
                         if (result.succeeded())
                         {
-                            logger.info("All verticles deployed successfully");
+                            LOGGER.info("All verticles deployed successfully");
                         }
                         else
                         {
-                            logger.error("Error deploying verticles", result.cause());
+                            LOGGER.error("Error deploying verticles", result.cause());
                         }
                     });
         }
         catch (Exception exception)
         {
-            logger.error("Error occurred : ",exception);
+            LOGGER.error("Error occurred : ",exception);
         }
     }
 
@@ -75,9 +75,9 @@ public class Main
 
                         loadTable(Constants.METRICS, metrics, "metric_id")
 
-                ).onSuccess(v -> logger.info("All tables loaded"))
+                ).onSuccess(v -> LOGGER.info("All tables loaded"))
 
-                .onFailure(error -> logger.error("Database initialization failed", error));
+                .onFailure(error -> LOGGER.error("Database initialization failed", error));
     }
 
     private static Future<Void> loadTable(String tableName, Map<Long, JsonObject> map, String id)

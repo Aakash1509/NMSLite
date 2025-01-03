@@ -17,7 +17,7 @@ import static org.example.Main.objects;
 
 public class Helper
 {
-    private static final Logger logger = LoggerFactory.getLogger(Helper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Helper.class);
 
     public static boolean validIp(String ip)
     {
@@ -119,7 +119,7 @@ public class Helper
             }
             catch (Exception exception)
             {
-                logger.error(exception.getMessage());
+                LOGGER.error(exception.getMessage());
             }
         }
     }
@@ -142,7 +142,7 @@ public class Helper
             {
                 process.destroy();
 
-                logger.warn("Connection check timed out");
+                LOGGER.warn("Connection check timed out");
 
                 deviceInfo.put("credential_profile",null);
 
@@ -159,7 +159,7 @@ public class Helper
 
             var output = reader.readLine();
 
-            logger.info("Output from Go executable: {}", output);
+            LOGGER.info("Output from Go executable: {}", output);
 
             // Parse the output and update the deviceInfo JSON object
 
@@ -173,7 +173,7 @@ public class Helper
         }
         catch (Exception exception)
         {
-            logger.error("Error during connection making: {}", exception.getMessage());
+            LOGGER.error("Error during connection making: {}", exception.getMessage());
         }
     }
 

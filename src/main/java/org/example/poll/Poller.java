@@ -12,9 +12,9 @@ import static org.example.Main.credentials;
 
 public class Poller extends AbstractVerticle
 {
-    private static final Logger logger = LoggerFactory.getLogger(Poller.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Poller.class);
 
-    private static final WorkerExecutor poll = Main.vertx.createSharedWorkerExecutor("polling",10,60, TimeUnit.SECONDS);
+    private static final WorkerExecutor poll = Main.vertx.createSharedWorkerExecutor("polling",20,60, TimeUnit.SECONDS);
 
     public void start()
     {
@@ -48,13 +48,13 @@ public class Poller extends AbstractVerticle
         }
         catch (Exception exception)
         {
-            logger.error("Exception occurred");
+            LOGGER.error("Exception occurred");
         }
     }
 
     private void startPoll(JsonObject pollingData, String timestamp)
     {
-        logger.info("Started polling of ip: {}",pollingData.getString("ip"));
+        LOGGER.info("Started polling of ip: {}",pollingData.getString("ip"));
 
         poll.executeBlocking(promise ->
         {
@@ -73,13 +73,13 @@ public class Poller extends AbstractVerticle
                 {
                     if (process.exitValue() != 0)
                     {
-                        logger.error("Go executable failed with error: {}", output.trim());
+                        LOGGER.error("Go executable failed with error: {}", output.trim());
 
                         promise.fail(new RuntimeException("Polling failed"));
                     }
                     else
                     {
-                        logger.info("Metrics collected: {}", output.trim());
+                        LOGGER.info("Metrics collected: {}", output.trim());
 
                         var result = new JsonObject(output.trim());
 
@@ -101,7 +101,7 @@ public class Poller extends AbstractVerticle
             }
             catch (Exception exception)
             {
-                logger.error("Failed to execute Go executable", exception);
+                LOGGER.error("Failed to execute Go executable", exception);
 
                 promise.fail(exception);
             }
@@ -109,11 +109,11 @@ public class Poller extends AbstractVerticle
         {
             if (res.succeeded())
             {
-                logger.info("Metrics fetched successfully for ip: {}", pollingData.getString("ip"));
+                LOGGER.info("Metrics fetched successfully for ip: {}", pollingData.getString("ip"));
             }
             else
             {
-                logger.error("Failed to fetch metrics for ip: {}", pollingData.getString("ip"));
+                LOGGER.error("Failed to fetch metrics for ip: {}", pollingData.getString("ip"));
             }
         });
     }
