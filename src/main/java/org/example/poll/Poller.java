@@ -75,6 +75,8 @@ public class Poller extends AbstractVerticle
                     {
                         LOGGER.error("Go executable failed with error: {}", output.trim());
 
+                        process.destroy();
+
                         promise.fail(new RuntimeException("Polling failed"));
                     }
                     else

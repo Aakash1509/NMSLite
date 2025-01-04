@@ -60,5 +60,13 @@ public class Constants
 
     public static final int DATABASE_INTERVAL = 10000;
 
+    public static final String STATUS_CODE = "status.code";
+
+    public static final String MESSAGE = "message";
+
+    public static final String ERROR = "error";
+
+    public static final String CONTEXT = "data";
+
 
 }

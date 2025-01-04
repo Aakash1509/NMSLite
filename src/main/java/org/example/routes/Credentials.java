@@ -43,82 +43,23 @@ public class Credentials implements CrudOperations
         {
             var requestBody = context.body().asJsonObject();
 
-            var name = requestBody.getString("credential.profile.name");
+            var validation = Helper.validateCredential(requestBody);
 
-            var protocol = requestBody.getString("credential.profile.protocol");
-
-            if (name == null || name.isEmpty() || protocol == null || protocol.isEmpty())
+            if(!validation.isEmpty())
             {
                 context.response()
                         .setStatusCode(500)
                         .end(new JsonObject()
-                                .put("status.code", 500)
-                                .put("message", "Please enter both username and protocol").encodePrettily());
+                                .put(Constants.STATUS_CODE,500)
+                                .put(Constants.MESSAGE,validation).encodePrettily());
 
-                return;
-            }
-
-            // Validate protocol-specific fields
-            if ("SSH".equals(protocol))
-            {
-                var userName = requestBody.getString("user.name");
-
-                var userPassword = requestBody.getString("user.password");
-
-                if (userName == null || userName.isEmpty() || userPassword == null || userPassword.isEmpty())
-                {
-                    context.response()
-                            .setStatusCode(500)
-                            .end(new JsonObject()
-                                    .put("status.code", 500)
-                                    .put("message", "For SSH protocol, both user.name and user.password are required")
-                                    .encodePrettily());
-                    return;
-                }
-            }
-            else if ("SNMP".equals(protocol))
-            {
-                var community = requestBody.getString("community");
-
-                var version = requestBody.getString("version");
-
-                if (community == null || community.isEmpty() || version == null || version.isEmpty())
-                {
-                    context.response()
-                            .setStatusCode(500)
-                            .end(new JsonObject()
-                                    .put("status.code", 500)
-                                    .put("message", "For SNMP protocol, both community and version are required")
-                                    .encodePrettily());
-                    return;
-                }
-            }
-            else
-            {
-                // Invalid protocol
-                context.response()
-                        .setStatusCode(500)
-                        .end(new JsonObject()
-                                .put("status.code", 500)
-                                .put("message", "Unsupported protocol: " + protocol)
-                                .encodePrettily());
-                return;
-            }
-
-            if (Helper.isNotUnique(credentials, name, "profile_name"))
-            {
-                context.response()
-                        .setStatusCode(400)
-                        .end(new JsonObject()
-                                .put("status.code", 400)
-                                .put("message", "Credential profile name should be unique").encodePrettily());
                 return;
             }
 
             // If name is unique, insert in database
             QueryUtility.getInstance().insert(Constants.CREDENTIALS, new JsonObject()
-                            .put("profile_name", name)
-                            .put("profile_protocol", protocol)
+                            .put("profile_name", requestBody.getString("credential.profile.name"))
+                            .put("profile_protocol", requestBody.getString("credential.profile.protocol"))
                             .put("user_name", requestBody.getString("user.name"))
                             .put("user_password", requestBody.getString("user.password"))
                             .put("community", requestBody.getString("community"))
@@ -129,8 +70,8 @@ public class Credentials implements CrudOperations
                         {
                             Helper.insertInMap(credentials, result.result(), new JsonObject()
                                     .put("profile_id", result.result())
-                                    .put("profile_name", name)
-                                    .put("profile_protocol", protocol)
+                                    .put("profile_name", requestBody.getString("credential.profile.name"))
+                                    .put("profile_protocol", requestBody.getString("credential.profile.protocol"))
                                     .put("user_name", requestBody.getString("user.name"))
                                     .put("user_password", requestBody.getString("user.password"))
                                     .put("community", requestBody.getString("community"))
@@ -139,18 +80,18 @@ public class Credentials implements CrudOperations
                             context.response()
                                     .setStatusCode(201)
                                     .end(new JsonObject()
-                                            .put("status.code", 201)
-                                            .put("message", "Credential profile created successfully")
-                                            .put("data", new JsonObject().put("credential.profile.id", result.result())).encodePrettily());
+                                            .put(Constants.STATUS_CODE, 201)
+                                            .put(Constants.MESSAGE, "Credential profile created successfully")
+                                            .put(Constants.CONTEXT, new JsonObject().put("credential.profile.id", result.result())).encodePrettily());
                         }
                         else
                         {
                             context.response()
                                     .setStatusCode(500)
                                     .end(new JsonObject()
-                                            .put("status.code", 500)
-                                            .put("message", "Failed to create credential profile")
-                                            .put("error", result.cause().getMessage()).encodePrettily());
+                                            .put(Constants.STATUS_CODE, 500)
+                                            .put(Constants.MESSAGE, "Failed to create credential profile")
+                                            .put(Constants.ERROR, result.cause().getMessage()).encodePrettily());
                         }
                     });
         }
@@ -159,9 +100,9 @@ public class Credentials implements CrudOperations
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code", 500)
-                            .put("message", "Server error in creating credential profile")
-                            .put("error", exception.getCause().getMessage()).encodePrettily());
+                            .put(Constants.STATUS_CODE, 500)
+                            .put(Constants.MESSAGE, "Server error in creating credential profile")
+                            .put(Constants.ERROR, exception.getCause().getMessage()).encodePrettily());
         }
     }
 
@@ -192,8 +133,8 @@ public class Credentials implements CrudOperations
                             context.response()
                                     .setStatusCode(200)
                                     .end(new JsonObject()
-                                            .put("status.code",200)
-                                            .put("message","Credential profile updated successfully").encodePrettily());
+                                            .put(Constants.STATUS_CODE,200)
+                                            .put(Constants.MESSAGE,"Credential profile updated successfully").encodePrettily());
                         }
                         else
                         {
@@ -202,17 +143,17 @@ public class Credentials implements CrudOperations
                                 context.response()
                                         .setStatusCode(404)
                                         .end(new JsonObject()
-                                                .put("status.code",404)
-                                                .put("message","Credential profile not found of this ID").encodePrettily());
+                                                .put(Constants.STATUS_CODE,404)
+                                                .put(Constants.MESSAGE,"Credential profile not found of this ID").encodePrettily());
                             }
                             else
                             {
                                 context.response()
                                         .setStatusCode(500)
                                         .end(new JsonObject()
-                                                .put("status.code",500)
-                                                .put("message","Database error while updating credential profile")
-                                                .put("error",result.cause().getMessage()).encodePrettily());
+                                                .put(Constants.STATUS_CODE,500)
+                                                .put(Constants.MESSAGE,"Database error while updating credential profile")
+                                                .put(Constants.ERROR,result.cause().getMessage()).encodePrettily());
                             }
                         }
                     });
@@ -222,9 +163,9 @@ public class Credentials implements CrudOperations
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code",500)
-                            .put("message","Server error in updating credential profile")
-                            .put("error",exception.getCause().getMessage()).encodePrettily());
+                            .put(Constants.STATUS_CODE,500)
+                            .put(Constants.MESSAGE,"Server error in updating credential profile")
+                            .put(Constants.ERROR,exception.getCause().getMessage()).encodePrettily());
         }
     }
 
@@ -234,13 +175,13 @@ public class Credentials implements CrudOperations
     {
         var credentialID = context.pathParam("id");
 
-        if (credentialID == null || credentialID.isEmpty())
+        if (Helper.validateField(credentialID))
         {
             context.response()
                     .setStatusCode(404)
                     .end(new JsonObject()
-                            .put("status.code", 404)
-                            .put("message", "Please enter a valid credential ID").encodePrettily());
+                            .put(Constants.STATUS_CODE, 404)
+                            .put(Constants.MESSAGE, "Please enter a valid credential ID").encodePrettily());
             return;
         }
         try
@@ -257,8 +198,8 @@ public class Credentials implements CrudOperations
                             context.response()
                                     .setStatusCode(200)
                                     .end(new JsonObject()
-                                            .put("status.code", 200)
-                                            .put("message", "Credential profile deleted successfully").encodePrettily());
+                                            .put(Constants.STATUS_CODE, 200)
+                                            .put(Constants.MESSAGE, "Credential profile deleted successfully").encodePrettily());
                         }
                         else
                         {
@@ -267,17 +208,17 @@ public class Credentials implements CrudOperations
                                 context.response()
                                         .setStatusCode(404)
                                         .end(new JsonObject()
-                                                .put("status.code", 404)
-                                                .put("message", "Credential profile not found for this ID").encodePrettily());
+                                                .put(Constants.STATUS_CODE, 404)
+                                                .put(Constants.MESSAGE, "Credential profile not found for this ID").encodePrettily());
                             }
                             else
                             {
                                 context.response()
                                         .setStatusCode(500)
                                         .end(new JsonObject()
-                                                .put("status.code", 500)
-                                                .put("message", "Database error while deleting credential profile")
-                                                .put("error", result.cause().getMessage()).encodePrettily());
+                                                .put(Constants.STATUS_CODE, 500)
+                                                .put(Constants.MESSAGE, "Database error while deleting credential profile")
+                                                .put(Constants.ERROR, result.cause().getMessage()).encodePrettily());
                             }
                         }
                     });
@@ -287,9 +228,9 @@ public class Credentials implements CrudOperations
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code", 500)
-                            .put("message", "Server error in deleting credential profile")
-                            .put("error", "Please enter a valid credential profile ID").encodePrettily());
+                            .put(Constants.STATUS_CODE, 500)
+                            .put(Constants.MESSAGE, "Server error in deleting credential profile")
+                            .put(Constants.ERROR, "Please enter a valid credential profile ID").encodePrettily());
         }
     }
 
@@ -300,13 +241,13 @@ public class Credentials implements CrudOperations
     {
         var credentialID = context.pathParam("id");
 
-        if (credentialID == null || credentialID.isEmpty())
+        if (Helper.validateField(credentialID))
         {
             context.response()
                     .setStatusCode(404)
                     .end(new JsonObject()
-                            .put("status.code", 404)
-                            .put("message", "Please enter a valid credential ID").encodePrettily());
+                            .put(Constants.STATUS_CODE, 404)
+                            .put(Constants.MESSAGE, "Please enter a valid credential ID").encodePrettily());
             return;
         }
         try
@@ -318,17 +259,17 @@ public class Credentials implements CrudOperations
                 context.response()
                         .setStatusCode(200)
                         .end(new JsonObject()
-                                .put("status.code", 200)
-                                .put("message", "Credential profile fetched successfully")
-                                .put("data", credentials.get(id)).encodePrettily());
+                                .put(Constants.STATUS_CODE, 200)
+                                .put(Constants.MESSAGE, "Credential profile fetched successfully")
+                                .put(Constants.CONTEXT, credentials.get(id)).encodePrettily());
             }
             else
             {
                 context.response()
                         .setStatusCode(404)
                         .end(new JsonObject()
-                                .put("status.code", 404)
-                                .put("message", "Credential profile not found for this ID").encodePrettily());
+                                .put(Constants.STATUS_CODE, 404)
+                                .put(Constants.MESSAGE, "Credential profile not found for this ID").encodePrettily());
             }
         }
         catch (Exception exception)
@@ -336,9 +277,9 @@ public class Credentials implements CrudOperations
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code", 500)
-                            .put("message", "Server error in fetching credential profile")
-                            .put("error", "Please enter a valid credential profile ID").encodePrettily());
+                            .put(Constants.STATUS_CODE, 500)
+                            .put(Constants.MESSAGE, "Server error in fetching credential profile")
+                            .put(Constants.ERROR, "Please enter a valid credential profile ID").encodePrettily());
         }
     }
 
@@ -357,18 +298,18 @@ public class Credentials implements CrudOperations
                 context.response()
                         .setStatusCode(200)
                         .end(new JsonObject()
-                                .put("status.code", 200)
-                                .put("message", "Credential profiles fetched successfully")
-                                .put("data", records).encodePrettily());
+                                .put(Constants.STATUS_CODE, 200)
+                                .put(Constants.MESSAGE, "Credential profiles fetched successfully")
+                                .put(Constants.CONTEXT, records).encodePrettily());
             }
             else
             {
                 context.response()
                         .setStatusCode(200)
                         .end(new JsonObject()
-                                .put("status.code", 200)
-                                .put("message", "Credential profiles fetched successfully")
-                                .put("data", "No credential profiles currently").encodePrettily());
+                                .put(Constants.STATUS_CODE, 200)
+                                .put(Constants.MESSAGE, "Credential profiles fetched successfully")
+                                .put(Constants.CONTEXT, "No credential profiles currently").encodePrettily());
             }
         }
         catch (Exception exception)
@@ -376,9 +317,9 @@ public class Credentials implements CrudOperations
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code",500)
-                            .put("message","Server error in fetching credential profiles")
-                            .put("error",exception.getCause().getMessage()).encodePrettily());
+                            .put(Constants.STATUS_CODE,500)
+                            .put(Constants.MESSAGE,"Server error in fetching credential profiles")
+                            .put(Constants.ERROR,exception.getCause().getMessage()).encodePrettily());
         }
     }
 }

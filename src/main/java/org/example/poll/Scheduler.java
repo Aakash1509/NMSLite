@@ -85,7 +85,7 @@ public class Scheduler extends AbstractVerticle
             {
                 preparePolling(objects.get(metrics.get(entry.getKey()).getLong("metric_object")),metrics.get(entry.getKey()),currentTime);
 
-                pollDevices.put(entry.getKey(),entry.getValue()+currentTime);
+                pollDevices.put(entry.getKey(),entry.getValue() + currentTime);
             }
         }
     }

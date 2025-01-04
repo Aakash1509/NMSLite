@@ -7,13 +7,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import static org.example.Main.objects;
+import static org.example.Main.*;
 
 public class Helper
 {
@@ -49,79 +47,6 @@ public class Helper
             }
         }
         return unique;
-    }
-
-    public static boolean ping(String ip)
-    {
-        try
-        {
-            var process = new ProcessBuilder("ping","-c 5",ip).start();
-
-            var reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String  line;
-
-            var down = false;
-
-            //Due to network latency if 5 packets are not send, then waitFor
-            var status = process.waitFor(5, TimeUnit.SECONDS); //Will return boolean , while exitvalue returns 0 or other value
-
-            if(!status)
-            {
-                process.destroy();
-
-                return false;
-            }
-
-            while((line = reader.readLine())!=null)
-            {
-                if(line.contains("100% packet loss"))
-                {
-                    down = true;
-
-                    break;
-                }
-            }
-            //If status is true , but exit value can be 1
-            if(process.exitValue()!=0)
-            {
-                return false;
-            }
-            return !down; //Will return true , if no issues were detected
-        }
-        catch (Exception exception)
-        {
-            return false;
-        }
-    }
-
-    public static boolean isPortOpen(String ip,Integer port)
-    {
-        var socket = new Socket();
-
-        var address = new InetSocketAddress(ip,port);
-
-        try
-        {
-            socket.connect(address,2000);
-
-            return true; //Port is open
-        }
-        catch (Exception exception)
-        {
-            return false; //Port is closed
-        }
-        finally
-        {
-            try
-            {
-                socket.close();
-            }
-            catch (Exception exception)
-            {
-                LOGGER.error(exception.getMessage());
-            }
-        }
     }
 
     public static void checkConnection(JsonObject deviceInfo)
@@ -192,6 +117,103 @@ public class Helper
     public static void insertInMap(Map<Long, JsonObject> map,Long key, JsonObject data)
     {
         map.put(key,data);
+    }
+
+    public static boolean validateField(String fieldValue)
+    {
+        return fieldValue == null || fieldValue.isEmpty();
+    }
+
+    public static String validateDiscovery(JsonObject requestBody)
+    {
+        if (requestBody == null)
+        {
+            return "Request body cannot be null";
+        }
+
+        var name = requestBody.getString("discovery.name");
+
+        var ip = requestBody.getString("discovery.ip");
+
+        var port = requestBody.getInteger("discovery.port");
+
+        var deviceType = requestBody.getString("device.type");
+
+        var credentialProfiles = requestBody.getJsonArray("discovery.credential.profiles");
+
+        if (validateField(name) || validateField(ip) || validateField(String.valueOf(port)) ||
+                validateField(deviceType) || validateField(String.valueOf(credentialProfiles)))
+        {
+            return "Please enter required fields";
+        }
+
+        if (!validIp(ip))
+        {
+            return "Invalid IP address provided";
+        }
+
+        if (validPort(port))
+        {
+            return "Invalid port provided";
+        }
+
+        if (isNotUnique(discoveries, name, "name"))
+        {
+            return "Discovery name should be unique";
+        }
+
+        return "";
+    }
+
+    public static String validateCredential(JsonObject requestBody)
+    {
+        if (requestBody == null)
+        {
+            return "Request body cannot be null";
+        }
+
+        var name = requestBody.getString("credential.profile.name");
+
+        var protocol = requestBody.getString("credential.profile.protocol");
+
+        if (validateField(name) || validateField(protocol))
+        {
+            return "Please enter both credential profile name and protocol";
+        }
+
+        if ("SSH".equals(protocol))
+        {
+            var userName = requestBody.getString("user.name");
+
+            var userPassword = requestBody.getString("user.password");
+
+            if (validateField(userName) || validateField(userPassword))
+            {
+                return "For SSH protocol, both user.name and user.password are required";
+            }
+        }
+        else if ("SNMP".equals(protocol))
+        {
+            var community = requestBody.getString("community");
+
+            var version = requestBody.getString("version");
+
+            if (validateField(community) || validateField(version))
+            {
+                return "For SNMP protocol, both community and version are required";
+            }
+        }
+        else
+        {
+            return "Unsupported protocol: " + protocol;
+        }
+
+        if (isNotUnique(credentials, name, "profile_name"))
+        {
+            return "Credential profile name should be unique";
+        }
+
+        return "";
     }
 }
 

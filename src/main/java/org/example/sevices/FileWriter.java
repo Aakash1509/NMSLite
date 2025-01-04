@@ -2,6 +2,7 @@ package org.example.sevices;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.OpenOptions;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
 import org.slf4j.Logger;
@@ -30,15 +31,7 @@ public class FileWriter extends AbstractVerticle
 
                     var filePath = Constants.BASE_DIRECTORY + "/" + String.format("%s.txt", timestamp);
 
-                    // If file exists then append data or else write in a new file
-                    if (vertx.fileSystem().existsBlocking(filePath))
-                    {
-                        appendToFile(filePath, ip, context);
-                    }
-                    else
-                    {
-                        writeFile(filePath, ip, context);
-                    }
+                    writeToFile(filePath,ip,context);
 
                     promise.complete();
                 }
@@ -52,35 +45,42 @@ public class FileWriter extends AbstractVerticle
         });
     }
 
-    private void appendToFile(String filePath, String ip, JsonObject metrics)
+    private void writeToFile(String filePath, String ip, JsonObject metrics)
     {
         try
         {
-            vertx.fileSystem().writeFileBlocking(filePath, Buffer.buffer(vertx.fileSystem().readFileBlocking(filePath).toString() + "---\n" + new JsonObject()
-                    .put("ip", ip)
-                    .put("result", metrics)
-                    .encodePrettily()));
+            vertx.fileSystem().open(filePath,new OpenOptions().setAppend(true).setCreate(true))
+                    .onSuccess(file->
+                    {
+                        if(file.sizeBlocking() == 0)
+                        {
+                            //New file will be created
+                            file.write(Buffer.buffer(new JsonObject()
+                                            .put("ip",ip)
+                                            .put("result",metrics)
+                                            .encodePrettily()))
+                                    .onComplete(writeResult -> file.close());
+                        }
+                        else
+                        {
+                            //Appending in file
+                            file.write(Buffer.buffer("---\n" + new JsonObject()
+                                            .put("ip", ip)
+                                            .put("result", metrics)
+                                            .encodePrettily()))
+                                    .onComplete(writeResult -> file.close());
+                        }
+
+                        LOGGER.info("Successfully appended to file: {}", filePath);
+                    })
+                    .onFailure(exception->
+                    {
+                        LOGGER.error("Error opening or appending to file: {}", exception.getMessage(), exception);
+                    });
         }
         catch (Exception exception)
         {
-            LOGGER.error("Error appending to file: {}", exception.getMessage(), exception);
-
-            throw exception;
-        }
-    }
-
-    private void writeFile(String filePath, String ip, JsonObject metrics)
-    {
-        try
-        {
-            vertx.fileSystem().writeFileBlocking(filePath, Buffer.buffer(new JsonObject()
-                    .put("ip", ip)
-                    .put("result", metrics)
-                    .encodePrettily()));
-        }
-        catch (Exception exception)
-        {
-            LOGGER.error("Error writing to file: {}", exception.getMessage(), exception);
+            LOGGER.error("Error during file operation: {}", exception.getMessage(), exception);
 
             throw exception;
         }

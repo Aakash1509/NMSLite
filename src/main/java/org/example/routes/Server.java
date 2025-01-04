@@ -38,15 +38,15 @@ public class Server extends AbstractVerticle
         router.get("/api/v1/").handler(ctx -> ctx.response()
                 .setStatusCode(200)
                 .end(new JsonObject()
-                        .put("status.code",200)
-                        .put("message","Welcome to Homepage")
-                        .put("data","Root endpoint of API").encodePrettily()));
+                        .put(Constants.STATUS_CODE,200)
+                        .put(Constants.MESSAGE,"Welcome to Homepage")
+                        .put(Constants.CONTEXT,"Root endpoint of API").encodePrettily()));
 
         router.get("/notfound").handler(ctx-> ctx.response().setStatusCode(404).
                 end(new JsonObject()
-                        .put("status.code",404)
-                        .put("message","Not found")
-                        .put("data","Requested endpoint doesn't exist").encodePrettily()));
+                        .put(Constants.STATUS_CODE,404)
+                        .put(Constants.MESSAGE,"Not found")
+                        .put(Constants.CONTEXT,"Requested endpoint doesn't exist").encodePrettily()));
 
         router.route().failureHandler(ctx->
         {
@@ -58,9 +58,9 @@ public class Server extends AbstractVerticle
             {
                 ctx.response().setStatusCode(500).
                         end(new JsonObject()
-                                .put("status.code",404)
-                                .put("message","Error occurred")
-                                .put("error",ctx.failure()).encodePrettily());
+                                .put(Constants.STATUS_CODE,404)
+                                .put(Constants.MESSAGE,"Error occurred")
+                                .put(Constants.ERROR,ctx.failure()).encodePrettily());
             }
         });
 

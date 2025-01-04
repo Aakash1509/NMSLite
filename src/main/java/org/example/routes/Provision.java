@@ -53,13 +53,13 @@ public class Provision
     {
         var discoveryID = context.pathParam("id");
 
-        if (discoveryID == null || discoveryID.isEmpty())
+        if (Helper.validateField(discoveryID))
         {
             context.response()
                     .setStatusCode(404)
                     .end(new JsonObject()
-                            .put("status.code", 404)
-                            .put("message", "Please enter a valid discovery ID").encodePrettily());
+                            .put(Constants.STATUS_CODE, 404)
+                            .put(Constants.MESSAGE, "Please enter a valid discovery ID").encodePrettily());
             return;
         }
         try
@@ -73,8 +73,8 @@ public class Provision
                 context.response()
                         .setStatusCode(404)
                         .end(new JsonObject()
-                                .put("status.code", 404)
-                                .put("message", "Device status is down so cannot be provisioned").encodePrettily());
+                                .put(Constants.STATUS_CODE, 404)
+                                .put(Constants.MESSAGE, "Device status is down so cannot be provisioned").encodePrettily());
                 return;
             }
 
@@ -83,8 +83,8 @@ public class Provision
                 context.response()
                         .setStatusCode(404)
                         .end(new JsonObject()
-                                .put("status.code", 404)
-                                .put("message", "Device with this IP is already provisioned").encodePrettily());
+                                .put(Constants.STATUS_CODE, 404)
+                                .put(Constants.MESSAGE, "Device with this IP is already provisioned").encodePrettily());
 
                 return;
             }
@@ -144,26 +144,26 @@ public class Provision
                         context.response()
                                 .setStatusCode(201)
                                 .end(new JsonObject()
-                                        .put("status.code",201)
-                                        .put("message","Device provisioned successfully")
-                                        .put("data",new JsonObject()
+                                        .put(Constants.STATUS_CODE,201)
+                                        .put(Constants.MESSAGE,"Device provisioned successfully")
+                                        .put(Constants.CONTEXT,new JsonObject()
                                                 .put("object.id", result.getLong("object_id"))).encodePrettily());
                     })
                     .onFailure(error -> context.response()
                             .setStatusCode(400)
                             .end(new JsonObject()
-                                    .put("status.code",400)
-                                    .put("message","Device cannot be provisioned")
-                                    .put("error",error.getMessage()).encodePrettily()));
+                                    .put(Constants.STATUS_CODE,400)
+                                    .put(Constants.MESSAGE,"Device cannot be provisioned")
+                                    .put(Constants.ERROR,error.getMessage()).encodePrettily()));
         }
         catch (Exception exception)
         {
             context.response()
                     .setStatusCode(500)
                     .end(new JsonObject()
-                            .put("status.code",500)
-                            .put("message","Server error in checking if the device is up or not")
-                            .put("error",exception.getCause().getMessage()).encodePrettily());
+                            .put(Constants.STATUS_CODE,500)
+                            .put(Constants.MESSAGE,"Server error in checking if the device is up or not")
+                            .put(Constants.ERROR,exception.getCause().getMessage()).encodePrettily());
         }
     }
 }
