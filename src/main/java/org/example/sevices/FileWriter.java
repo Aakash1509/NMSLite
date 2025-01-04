@@ -70,12 +70,6 @@ public class FileWriter extends AbstractVerticle
                                             .encodePrettily()))
                                     .onComplete(writeResult -> file.close());
                         }
-
-                        LOGGER.info("Successfully appended to file: {}", filePath);
-                    })
-                    .onFailure(exception->
-                    {
-                        LOGGER.error("Error opening or appending to file: {}", exception.getMessage(), exception);
                     });
         }
         catch (Exception exception)
