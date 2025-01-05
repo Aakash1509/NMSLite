@@ -1,5 +1,6 @@
 package org.example.sevices;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import org.example.Constants;
 import org.slf4j.Logger;
@@ -17,7 +18,7 @@ public class FileSender extends AbstractVerticle
 
     private ZContext context;
 
-    public void start()
+    public void start(Promise<Void> startPromise)
     {
         try
         {
@@ -30,10 +31,14 @@ public class FileSender extends AbstractVerticle
             // Periodically process files
             vertx.setPeriodic(Constants.DATABASE_INTERVAL, id -> processFiles());
 
+            startPromise.complete();
+
         }
         catch (Exception exception)
         {
             LOGGER.error("Failed to initialize ZMQ context: {}", exception.getMessage(), exception);
+
+            startPromise.fail(exception);
         }
     }
 

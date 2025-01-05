@@ -10,7 +10,7 @@ import org.example.Constants;
 
 public class Server extends AbstractVerticle
 {
-    public void start(Promise<Void> promise)
+    public void start(Promise<Void> startPromise)
     {
         var router = Router.router(Main.vertx);
 
@@ -35,55 +35,56 @@ public class Server extends AbstractVerticle
 
         new Provision().route(provisionRouter);
 
-        router.get("/api/v1/").handler(ctx -> ctx.response()
+        router.get("/api/v1/").handler(context -> context.response()
                 .setStatusCode(200)
                 .end(new JsonObject()
                         .put(Constants.STATUS_CODE,200)
                         .put(Constants.MESSAGE,"Welcome to Homepage")
                         .put(Constants.CONTEXT,"Root endpoint of API").encodePrettily()));
 
-        router.get("/notfound").handler(ctx-> ctx.response().setStatusCode(404).
+        router.get("/notfound").handler(context -> context.response().setStatusCode(404).
                 end(new JsonObject()
                         .put(Constants.STATUS_CODE,404)
                         .put(Constants.MESSAGE,"Not found")
                         .put(Constants.CONTEXT,"Requested endpoint doesn't exist").encodePrettily()));
 
-        router.route().failureHandler(ctx->
+        router.route().failureHandler(context ->
         {
-            if(ctx.statusCode()==404)
+            if(context.statusCode()==404)
             {
-                ctx.reroute("/notfound");
+                context.reroute("/notfound");
             }
             else
             {
-                ctx.response().setStatusCode(500).
+                context.response().setStatusCode(500).
                         end(new JsonObject()
                                 .put(Constants.STATUS_CODE,404)
                                 .put(Constants.MESSAGE,"Error occurred")
-                                .put(Constants.ERROR,ctx.failure()).encodePrettily());
+                                .put(Constants.ERROR, context.failure()).encodePrettily());
             }
         });
 
-        router.route().handler(ctx ->
+        router.route().handler(context ->
         {
-            ctx.fail(404); // Manually trigger a 404 for unmatched routes
+            context.fail(404); // Manually trigger a 404 for unmatched routes
         });
 
         vertx.createHttpServer()
 
-                .exceptionHandler(handler->promise.fail(handler.getCause().getMessage()))
+                .exceptionHandler(handler->startPromise.fail(handler.getCause().getMessage()))
 
                 .requestHandler(router)
 
-                .listen(Constants.HTTP_PORT, http->{
+                .listen(Constants.HTTP_PORT, http->
+                {
 
                     if(http.succeeded())
                     {
-                        promise.complete();
+                        startPromise.complete();
                     }
                     else
                     {
-                        promise.fail("Not able to listen on the port: "+ Constants.HTTP_PORT);
+                        startPromise.fail("Not able to listen on the port: "+ Constants.HTTP_PORT);
                     }
                 });
     }

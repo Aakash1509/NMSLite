@@ -36,7 +36,7 @@ public class Main
         {
             init()
 
-                    .compose(result->vertx.deployVerticle(new Server()))
+                    .compose(result -> vertx.deployVerticle(new Server()))
 
                     .compose(result -> vertx.deployVerticle(new Scheduler()))
 
@@ -44,7 +44,7 @@ public class Main
 
                     .compose(result -> vertx.deployVerticle(new FileWriter()))
 
-                    .compose(result-> vertx.deployVerticle(new FileSender()))
+                    .compose(result -> vertx.deployVerticle(new FileSender()))
 
                     .onComplete(result ->
                     {
