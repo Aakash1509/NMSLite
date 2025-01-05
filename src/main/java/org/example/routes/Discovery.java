@@ -496,7 +496,7 @@ public class Discovery implements CrudOperations
                 //Due to network latency if 5 packets are not send, then waitFor
                 var status = process.waitFor(5, TimeUnit.SECONDS); //Will return boolean , while exitvalue returns 0 or other value
 
-                if(!status)
+                if(!status || process.exitValue()!=0)
                 {
                     process.destroy();
 
@@ -514,15 +514,7 @@ public class Discovery implements CrudOperations
                         break;
                     }
                 }
-                //If status is true , but exit value can be 1
-                if(process.exitValue()!=0 || down)
-                {
-                    pingFuture.complete(false);
-                }
-                else
-                {
-                    pingFuture.complete(true);
-                }
+                pingFuture.complete(down);
             }
             catch (Exception exception)
             {

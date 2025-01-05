@@ -60,7 +60,6 @@ public class Poller extends AbstractVerticle
         {
             try
             {
-                // Start the process
                 pollingData.put(Constants.EVENT_TYPE, Constants.POLL);
 
                 Process process = new ProcessBuilder(Constants.PLUGIN_PATH, pollingData.encode())
@@ -71,35 +70,28 @@ public class Poller extends AbstractVerticle
 
                 if (process.waitFor(60, TimeUnit.SECONDS))
                 {
-                    if (process.exitValue() != 0)
+                    if (process.exitValue() == 0)
                     {
-                        LOGGER.error("Go executable failed with error: {}", output.trim());
-
-                        process.destroy();
-
-                        promise.fail(new RuntimeException("Polling failed"));
-                    }
-                    else
-                    {
-                        LOGGER.info("Metrics collected: {}", output.trim());
-
                         var result = new JsonObject(output.trim());
 
-                        // Send the result over the event bus to File writer verticle
                         vertx.eventBus().send(
                                 Constants.FILE_WRITE,
                                 new JsonObject()
                                         .put("metrics", result)
-                                        .put("timestamp", timestamp));
-
+                                        .put("timestamp", timestamp)
+                        );
                         promise.complete(result);
+                    }
+                    else
+                    {
+                        promise.fail("Polling failed: " + output.trim());
                     }
                 }
                 else
                 {
-                    // Timeout occurred
-                    process.destroy();
+                    promise.fail("Polling timed out");
                 }
+                process.destroy();
             }
             catch (Exception exception)
             {
@@ -107,15 +99,11 @@ public class Poller extends AbstractVerticle
 
                 promise.fail(exception);
             }
-        }, false, res ->
+        }, false, result ->
         {
-            if (res.succeeded())
+            if (result.failed())
             {
-                LOGGER.info("Metrics fetched successfully for ip: {}", pollingData.getString("ip"));
-            }
-            else
-            {
-                LOGGER.error("Failed to fetch metrics for ip: {}", pollingData.getString("ip"));
+                LOGGER.error("Polling failed for IP: {}", pollingData.getString("ip"));
             }
         });
     }

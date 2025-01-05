@@ -63,7 +63,7 @@ public class Helper
             // Wait for the process to complete within 60 seconds
             var status = process.waitFor(60, TimeUnit.SECONDS); //(boolean)
 
-            if (!status)
+            if (!status || process.exitValue() != 0)
             {
                 process.destroy();
 
