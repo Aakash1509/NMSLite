@@ -7,6 +7,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import org.example.Main;
 import org.example.Constants;
+import org.example.database.QueryUtility;
 
 public class Server extends AbstractVerticle
 {
@@ -88,4 +89,11 @@ public class Server extends AbstractVerticle
                     }
                 });
     }
+    public void stop(Promise<Void> stopPromise)
+    {
+        QueryUtility.getInstance().closeClient();
+
+        stopPromise.complete();
+    }
+
 }

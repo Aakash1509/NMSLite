@@ -305,4 +305,9 @@ public class QueryUtility
         });
         return promise.future();
     }
+
+    public void closeClient()
+    {
+        client.close();
+    }
 }

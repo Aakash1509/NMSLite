@@ -514,7 +514,7 @@ public class Discovery implements CrudOperations
                         break;
                     }
                 }
-                pingFuture.complete(down);
+                pingFuture.complete(!down);
             }
             catch (Exception exception)
             {
