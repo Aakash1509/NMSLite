@@ -68,16 +68,6 @@ public class Provision
 
             var device = discoveries.get(id);
 
-            if(!"Up".equals(device.getString("status")))
-            {
-                context.response()
-                        .setStatusCode(404)
-                        .end(new JsonObject()
-                                .put(Constants.STATUS_CODE, 404)
-                                .put(Constants.MESSAGE, "Device status is down so cannot be provisioned").encodePrettily());
-                return;
-            }
-
             if(Helper.isProvisioned(device.getString("ip")))
             {
                 context.response()

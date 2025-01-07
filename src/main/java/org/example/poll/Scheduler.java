@@ -18,7 +18,7 @@ public class Scheduler extends AbstractVerticle
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Scheduler.class);
 
-    private final Map<Long,Long> pollDevices = new ConcurrentHashMap<>(); //This map will contain metric_id and the next polling time
+    private final Map<Long,Long> pollDevices = new HashMap<>(); //This map will contain metric_id and the next polling time
 
     public void start()
     {
